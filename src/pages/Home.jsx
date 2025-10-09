@@ -1,10 +1,24 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
-import { MapPin, Star, Users, Calendar } from 'lucide-react'
+import { MapPin, Star, Users, Calendar, Search, Filter } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { Input } from '../components/ui/Input'
 
 const Home = () => {
+  console.log('Home component rendering')
+  
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterDestination, setFilterDestination] = useState('')
+
+  // Using basic styles to ensure visibility
+  const containerStyle = {
+    minHeight: '100vh',
+    padding: '20px',
+    backgroundColor: '#f0f0f0'
+  }
+  
   const popularDestinations = [
     {
       id: 1,
@@ -12,6 +26,8 @@ const Home = () => {
       description: 'Sun-kissed beaches, vibrant nightlife, and Portuguese heritage in India\'s party capital.',
       image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=500&h=300&fit=crop',
       rating: 4.8,
+      currentPeople: 2,
+      maxPeople: 4,
       travelers: 12500,
       price: '₹25,000',
       duration: '5 days'
@@ -22,6 +38,8 @@ const Home = () => {
       description: 'Paradise on Earth with snow-capped mountains, pristine lakes, and breathtaking valleys.',
       image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=500&h=300&fit=crop',
       rating: 4.9,
+          currentPeople: 1,
+      maxPeople: 3,
       travelers: 8900,
       price: '₹35,000',
       duration: '7 days'
@@ -32,6 +50,8 @@ const Home = () => {
       description: 'God\'s Own Country with backwaters, tea plantations, and rich cultural heritage.',
       image: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=500&h=300&fit=crop',
       rating: 4.7,
+            currentPeople: 3,
+      maxPeople: 6,
       travelers: 15600,
       price: '₹20,000',
       duration: '6 days'
@@ -42,6 +62,8 @@ const Home = () => {
       description: 'Land of kings with magnificent palaces, forts, and the golden Thar Desert.',
       image: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=500&h=300&fit=crop',
       rating: 4.6,
+           currentPeople: 1,
+      maxPeople: 2,
       travelers: 22100,
       price: '₹30,000',
       duration: '8 days'
@@ -52,6 +74,8 @@ const Home = () => {
       description: 'The City of Light, famous for its art, fashion, and iconic landmarks like the Eiffel Tower.',
       image: 'https://images.unsplash.com/photo-1502602898536-47ad22581b52?w=500&h=300&fit=crop',
       rating: 4.5,
+            currentPeople: 2,
+      maxPeople: 4,
       travelers: 18900,
       price: '₹1,20,000',
       duration: '5 days'
@@ -62,6 +86,8 @@ const Home = () => {
       description: 'Modern city-state with futuristic architecture, diverse cuisine, and vibrant culture.',
       image: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=500&h=300&fit=crop',
       rating: 4.4,
+            currentPeople: 2,
+      maxPeople: 4,
       travelers: 11200,
       price: '₹80,000',
       duration: '4 days'
@@ -90,10 +116,16 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="absolute inset-0 bg-black opacity-20"></div>
+   <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+
+      {/* Hero Section with Background Image */}
+<section
+  className="relative text-white bg-cover bg-center dark:text-gray-100"
+  style={{ backgroundImage: "url('/images/home-bg.jpg')" }}
+>
+  <div className="absolute inset-0 bg-black/40 dark:bg-black/60"></div>
+
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -109,12 +141,12 @@ const Home = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/plan-trip">
-                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+                <Button size="lg" className="bg-white/60 text-black hover:bg-gray-100  hover:scale-105 transform transition hover:bg-white/60">
                   Start Planning
                 </Button>
               </Link>
               <Link to="/pooling">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
+                <Button size="lg"  className="bg-white/60 text-black hover:bg-gray-100  hover:scale-105 transform transition hover:bg-white/60">
                   Find Travel Buddies
                 </Button>
               </Link>
@@ -124,7 +156,7 @@ const Home = () => {
       </section>
 
       {/* Popular Destinations */}
-      <section className="py-16">
+      <section className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -134,12 +166,61 @@ const Home = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Popular Destinations
+              Popular Destinations and Pools to Explore
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Explore India's most beautiful destinations and international favorites, handpicked by our travel community
             </p>
           </motion.div>
+
+
+
+
+
+
+
+
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="flex flex-col md:flex-row gap-4 mb-8"
+          >
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search destinations or descriptions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="md:w-64">
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Filter by destination..."
+                  value={filterDestination}
+                  onChange={(e) => setFilterDestination(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </motion.div>
+
+
+
+
+
+
+
+
+
+
+
 
           <motion.div
             variants={containerVariants}
@@ -148,7 +229,15 @@ const Home = () => {
             viewport={{ once: true }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
-            {popularDestinations.map((destination) => (
+            {popularDestinations
+              .filter(destination => {
+                const matchesSearch = destination.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  destination.description.toLowerCase().includes(searchTerm.toLowerCase())
+                const matchesFilter = !filterDestination ||
+                  destination.name.toLowerCase().includes(filterDestination.toLowerCase())
+                return matchesSearch && matchesFilter
+              })
+              .map((destination) => (
               <motion.div key={destination.id} variants={itemVariants}>
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                   <div className="relative">
@@ -175,7 +264,7 @@ const Home = () => {
                     <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
                       <div className="flex items-center space-x-1">
                         <Users className="h-4 w-4" />
-                        <span>{destination.travelers.toLocaleString()} travelers</span>
+                        <span>{destination.currentPeople}/{destination.maxPeople} people</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4" />
@@ -187,7 +276,7 @@ const Home = () => {
                         {destination.price}
                       </span>
                       <Button size="sm">
-                        Explore
+                        Join Trip
                       </Button>
                     </div>
                   </CardContent>

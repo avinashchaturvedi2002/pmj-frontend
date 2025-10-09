@@ -6,9 +6,11 @@ import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
 import { DatePicker } from '../components/ui/DatePicker'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card'
-import { MapPin, Calendar, Users, DollarSign, Plane, Loader } from 'lucide-react'
+import { MapPin, Calendar, Users,IndianRupee, Plane, Loader } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { format } from 'date-fns'
+
+
 
 const TripPlan = () => {
   const [formData, setFormData] = useState({
@@ -230,7 +232,8 @@ const TripPlan = () => {
                   <div>
                     <Label htmlFor="budget">Budget (INR)</Label>
                     <div className="relative mt-1">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                     <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+
                       <Input
                         id="budget"
                         name="budget"
@@ -302,7 +305,7 @@ const TripPlan = () => {
         >
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">💡 Planning Tips</CardTitle>
+              <CardTitle className="text-lg">Planning Tips</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">

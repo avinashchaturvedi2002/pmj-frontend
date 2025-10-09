@@ -20,58 +20,84 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
+    <div>
     <Router>
-      <div className="App">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Protected Routes with Layout */}
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Home />} />
-            <Route path="plan-trip" element={
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Protected Routes with Layout */}
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<Home />} />
+          <Route
+            path="plan-trip"
+            element={
               <ProtectedRoute>
                 <TripPlan />
               </ProtectedRoute>
-            } />
-            <Route path="suggestions" element={
+            }
+          />
+          <Route
+            path="suggestions"
+            element={
               <ProtectedRoute>
                 <Suggestions />
               </ProtectedRoute>
-            } />
-            <Route path="pooling" element={
+            }
+          />
+          <Route
+            path="pooling"
+            element={
               <ProtectedRoute>
                 <Pooling />
               </ProtectedRoute>
-            } />
-            <Route path="buses" element={
-              <ProtectedRoute>
-                <Buses />
-              </ProtectedRoute>
-            } />
-            <Route path="hotels" element={
-              <ProtectedRoute>
-                <Hotels />
-              </ProtectedRoute>
-            } />
-            <Route path="bookings" element={
-              <ProtectedRoute>
-                <Bookings />
-              </ProtectedRoute>
-            } />
-            <Route path="admin" element={
+            }
+          />
+        </Route>
+
+
+
+          <Route
+    path="buses"
+    element={
+      <ProtectedRoute>
+        <Buses />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="hotels"
+    element={
+      <ProtectedRoute>
+        <Hotels />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="bookings"
+    element={
+      <ProtectedRoute>
+        <Bookings />
+      </ProtectedRoute>
+    }
+  />
+
+
+       {/* <Route
+            path="admin"
+            element={
               <ProtectedRoute>
                 <AdminDashboard />
               </ProtectedRoute>
-            } />
-          </Route>
-          
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+            }
+          /> */}
+
+        {/* Catch all route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Router>
+    </div>
   )
 }
 

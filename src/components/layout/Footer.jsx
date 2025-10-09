@@ -15,7 +15,7 @@ const Footer = () => {
               Your ultimate travel companion for planning amazing trips across India and abroad, 
               finding travel buddies, and discovering incredible destinations from Kashmir to Kanyakumari.
             </p>
-            <div className="flex space-x-4">
+            {/* <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
                 <Facebook className="h-5 w-5" />
               </a>
@@ -25,7 +25,7 @@ const Footer = () => {
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
                 <Instagram className="h-5 w-5" />
               </a>
-            </div>
+            </div> */}
           </div>
 
           {/* Quick Links */}
@@ -61,15 +61,15 @@ const Footer = () => {
             <ul className="space-y-2">
               <li className="flex items-center text-gray-400">
                 <MapPin className="h-4 w-4 mr-2" />
-                <span>Connaught Place, New Delhi, India</span>
+                <span>MANIT Bhopal, India</span>
               </li>
-              <li className="flex items-center text-gray-400">
+              {/* <li className="flex items-center text-gray-400">
                 <Mail className="h-4 w-4 mr-2" />
                 <span>info@planmyjourney.in</span>
-              </li>
+              </li> */}
               <li className="flex items-center text-gray-400">
                 <Phone className="h-4 w-4 mr-2" />
-                <span>+91 98765 43210</span>
+                <span>+91 6394196970</span>
               </li>
             </ul>
           </div>
