@@ -72,7 +72,7 @@ const Register = () => {
     if (!validateForm()) return
     
     setIsLoading(true)
-    const result = await register(formData.email, formData.password, formData.name)
+    const result = await register(formData.name, formData.email, formData.password)
     setIsLoading(false)
     
     if (result.success) {

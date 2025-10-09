@@ -13,7 +13,15 @@ const Navbar = ({ isDarkMode, toggleDarkMode }) => {
     { name: 'Home', href: '/' },
     { name: 'Plan Trip', href: '/plan-trip' },
     { name: 'Travel Pooling', href: '/pooling' },
+    { name: 'Buses', href: '/buses' },
+    { name: 'Hotels', href: '/hotels' },
+    { name: 'My Bookings', href: '/bookings' },
   ]
+
+  // Add admin link for admin users
+  if (user?.role === 'ADMIN') {
+    navigation.push({ name: 'Admin', href: '/admin' })
+  }
 
   const isActive = (path) => location.pathname === path
 

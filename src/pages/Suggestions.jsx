@@ -29,10 +29,10 @@ const Suggestions = () => {
   const [activeTab, setActiveTab] = useState('transport')
 
   useEffect(() => {
-    if (currentTrip) {
+    if (currentTrip?.id) {
       getSuggestions(currentTrip.id)
     }
-  }, [currentTrip, getSuggestions])
+  }, [currentTrip?.id])
 
   const tabs = [
     { id: 'transport', label: 'Transport', icon: Plane },

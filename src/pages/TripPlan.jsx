@@ -4,16 +4,19 @@ import { useTripStore } from '../store/tripStore'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
+import { DatePicker } from '../components/ui/DatePicker'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card'
 import { MapPin, Calendar, Users, DollarSign, Plane, Loader } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { format } from 'date-fns'
 
 const TripPlan = () => {
   const [formData, setFormData] = useState({
     source: '',
     destination: '',
+    startDate: null,
+    endDate: null,
     budget: '',
-    days: '',
     people: ''
   })
   const [errors, setErrors] = useState({})
@@ -47,16 +50,20 @@ const TripPlan = () => {
       newErrors.destination = 'Destination is required'
     }
     
+    if (!formData.startDate) {
+      newErrors.startDate = 'Start date is required'
+    }
+    
+    if (!formData.endDate) {
+      newErrors.endDate = 'End date is required'
+    } else if (formData.startDate && formData.endDate <= formData.startDate) {
+      newErrors.endDate = 'End date must be after start date'
+    }
+    
     if (!formData.budget) {
       newErrors.budget = 'Budget is required'
     } else if (isNaN(formData.budget) || formData.budget <= 0) {
       newErrors.budget = 'Please enter a valid budget amount'
-    }
-    
-    if (!formData.days) {
-      newErrors.days = 'Number of days is required'
-    } else if (isNaN(formData.days) || formData.days <= 0) {
-      newErrors.days = 'Please enter a valid number of days'
     }
     
     if (!formData.people) {
@@ -74,7 +81,17 @@ const TripPlan = () => {
     
     if (!validateForm()) return
     
-    const result = await planTrip(formData)
+    // Prepare trip data
+    const tripData = {
+      source: formData.source,
+      destination: formData.destination,
+      startDate: format(formData.startDate, 'yyyy-MM-dd'),
+      endDate: format(formData.endDate, 'yyyy-MM-dd'),
+      budget: parseInt(formData.budget),
+      travelers: parseInt(formData.people)
+    }
+    
+    const result = await planTrip(tripData)
     
     if (result.success) {
       navigate('/suggestions')
@@ -165,7 +182,51 @@ const TripPlan = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label>Start Date</Label>
+                    <div className="mt-1">
+                      <DatePicker
+                        date={formData.startDate}
+                        onDateChange={(date) => {
+                          setFormData(prev => ({ ...prev, startDate: date }))
+                          if (errors.startDate) {
+                            setErrors(prev => ({ ...prev, startDate: '' }))
+                          }
+                        }}
+                        placeholder="Select start date"
+                        minDate={new Date()}
+                        className={errors.startDate ? 'border-red-500' : ''}
+                      />
+                    </div>
+                    {errors.startDate && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.startDate}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label>End Date</Label>
+                    <div className="mt-1">
+                      <DatePicker
+                        date={formData.endDate}
+                        onDateChange={(date) => {
+                          setFormData(prev => ({ ...prev, endDate: date }))
+                          if (errors.endDate) {
+                            setErrors(prev => ({ ...prev, endDate: '' }))
+                          }
+                        }}
+                        placeholder="Select end date"
+                        minDate={formData.startDate || new Date()}
+                        className={errors.endDate ? 'border-red-500' : ''}
+                      />
+                    </div>
+                    {errors.endDate && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.endDate}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label htmlFor="budget">Budget (INR)</Label>
                     <div className="relative mt-1">
@@ -188,29 +249,7 @@ const TripPlan = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="days">Number of Days</Label>
-                    <div className="relative mt-1">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="days"
-                        name="days"
-                        type="number"
-                        min="1"
-                        max="30"
-                        required
-                        className={`pl-10 ${errors.days ? 'border-red-500' : ''}`}
-                        placeholder="5"
-                        value={formData.days}
-                        onChange={handleChange}
-                      />
-                    </div>
-                    {errors.days && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.days}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="people">Number of People</Label>
+                    <Label htmlFor="people">Number of Travelers</Label>
                     <div className="relative mt-1">
                       <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
@@ -268,8 +307,10 @@ const TripPlan = () => {
             <CardContent>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li>• Be specific with locations for better recommendations</li>
+                <li>• Select your travel dates to check bus and hotel availability</li>
                 <li>• Include all travel expenses in your budget in INR (transport, accommodation, food, activities)</li>
-                <li>• Consider travel time when planning your days</li>
+                <li>• Best season to travel in India: October to March</li>
+                <li>• Book accommodations at least 2-3 weeks in advance</li>
                 <li>• Group size affects accommodation and transport options</li>
               </ul>
             </CardContent>

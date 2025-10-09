@@ -7,6 +7,10 @@ import Register from './pages/Register'
 import TripPlan from './pages/TripPlan'
 import Suggestions from './pages/Suggestions'
 import Pooling from './pages/Pooling'
+import Buses from './pages/Buses'
+import Hotels from './pages/Hotels'
+import Bookings from './pages/Bookings'
+import AdminDashboard from './pages/AdminDashboard'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -39,6 +43,26 @@ function App() {
             <Route path="pooling" element={
               <ProtectedRoute>
                 <Pooling />
+              </ProtectedRoute>
+            } />
+            <Route path="buses" element={
+              <ProtectedRoute>
+                <Buses />
+              </ProtectedRoute>
+            } />
+            <Route path="hotels" element={
+              <ProtectedRoute>
+                <Hotels />
+              </ProtectedRoute>
+            } />
+            <Route path="bookings" element={
+              <ProtectedRoute>
+                <Bookings />
+              </ProtectedRoute>
+            } />
+            <Route path="admin" element={
+              <ProtectedRoute>
+                <AdminDashboard />
               </ProtectedRoute>
             } />
           </Route>
