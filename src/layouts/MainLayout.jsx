@@ -23,9 +23,9 @@ const MainLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-gray-900">
       <Navbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
-      <main className="flex-1">
+      <main className="flex-grow">
         <Outlet />
       </main>
       <Footer />

@@ -17,36 +17,43 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <Router>
-      <div className="App">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Protected Routes with Layout */}
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Home />} />
-            <Route path="plan-trip" element={
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Protected Routes with Layout */}
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<Home />} />
+          <Route
+            path="plan-trip"
+            element={
               <ProtectedRoute>
                 <TripPlan />
               </ProtectedRoute>
-            } />
-            <Route path="suggestions" element={
+            }
+          />
+          <Route
+            path="suggestions"
+            element={
               <ProtectedRoute>
                 <Suggestions />
               </ProtectedRoute>
-            } />
-            <Route path="pooling" element={
+            }
+          />
+          <Route
+            path="pooling"
+            element={
               <ProtectedRoute>
                 <Pooling />
               </ProtectedRoute>
-            } />
-          </Route>
-          
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+            }
+          />
+        </Route>
+
+        {/* Catch all route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Router>
   )
 }
