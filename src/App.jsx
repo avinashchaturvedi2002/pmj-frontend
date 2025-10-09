@@ -56,6 +56,43 @@ function App() {
           />
         </Route>
 
+
+
+          <Route
+    path="buses"
+    element={
+      <ProtectedRoute>
+        <Buses />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="hotels"
+    element={
+      <ProtectedRoute>
+        <Hotels />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="bookings"
+    element={
+      <ProtectedRoute>
+        <Bookings />
+      </ProtectedRoute>
+    }
+  />
+
+
+       {/* <Route
+            path="admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          /> */}
+
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
