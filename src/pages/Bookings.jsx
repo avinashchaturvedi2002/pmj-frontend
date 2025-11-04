@@ -163,32 +163,37 @@ const Bookings = () => {
                       <div className="space-y-4">
                         {/* Booking Details */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {booking.busSeat && (
+                          {booking.busBookings && booking.busBookings.length > 0 && (
                             <div className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                               <Bus className="h-5 w-5 text-primary mt-0.5" />
                               <div className="flex-1">
-                                <p className="font-medium text-sm">Bus</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  {booking.busSeat.bus?.busName}
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  Seat: {booking.busSeat.seatNumber}
-                                </p>
+                                <p className="font-medium text-sm">Bus Bookings</p>
+                                {booking.busBookings.map((busBooking) => (
+                                  <div key={busBooking.id} className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                    <p className="font-semibold">{busBooking.bus?.busName || 'Bus'}</p>
+                                    <p>Date: {formatDate(busBooking.bookingDate)}</p>
+                                    <p>Seats: {busBooking.seatsBooked} × ₹{busBooking.pricePerSeat} = ₹{busBooking.totalPrice}</p>
+                                    {busBooking.seatNumbers && <p>Seats: {JSON.parse(busBooking.seatNumbers).join(', ')}</p>}
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           )}
 
-                          {booking.hotelRoom && (
+                          {booking.hotelBookings && booking.hotelBookings.length > 0 && (
                             <div className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                               <Hotel className="h-5 w-5 text-primary mt-0.5" />
                               <div className="flex-1">
-                                <p className="font-medium text-sm">Hotel</p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  {booking.hotelRoom.hotel?.name}
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  Room: {booking.hotelRoom.roomNumber} ({booking.hotelRoom.roomType})
-                                </p>
+                                <p className="font-medium text-sm">Hotel Bookings</p>
+                                {booking.hotelBookings.map((hotelBooking) => (
+                                  <div key={hotelBooking.id} className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                    <p className="font-semibold">{hotelBooking.hotel?.name || 'Hotel'}</p>
+                                    <p>Check-in: {formatDate(hotelBooking.checkIn)}</p>
+                                    <p>Check-out: {formatDate(hotelBooking.checkOut)}</p>
+                                    <p>Rooms: {hotelBooking.roomsBooked} × ₹{hotelBooking.pricePerRoom}/night = ₹{hotelBooking.totalPrice}</p>
+                                    {hotelBooking.roomNumbers && <p>Rooms: {JSON.parse(hotelBooking.roomNumbers).join(', ')}</p>}
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           )}
@@ -236,5 +241,6 @@ const Bookings = () => {
 }
 
 export default Bookings
+
 
 

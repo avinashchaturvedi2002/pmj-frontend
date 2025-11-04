@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { usePoolingStore } from '../store/poolingStore'
 import { useTripStore } from '../store/tripStore'
+import { useAuthStore } from '../store/authStore'
+import { poolingService } from '../services'
+import RazorpayCheckout from '../components/RazorpayCheckout'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
@@ -16,11 +20,16 @@ import {
   Filter,
   MessageCircle,
   UserPlus,
-  Loader
+  Loader,
+  Settings,
+  IndianRupee,
+  CheckCircle,
+  Clock
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const Pooling = () => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('browse')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -28,12 +37,17 @@ const Pooling = () => {
   
   const { poolGroups, myPoolGroups, isLoading, fetchPoolGroups, fetchMyPoolGroups, createPoolGroup, joinPoolGroup } = usePoolingStore()
   const { trips, fetchTrips } = useTripStore()
+  const { user } = useAuthStore()
 
   const [createForm, setCreateForm] = useState({
     tripId: '',
     groupSize: '',
     description: ''
   })
+
+  // State for approve and payment
+  const [approvingGroupId, setApprovingGroupId] = useState(null)
+  const [paymentGroupId, setPaymentGroupId] = useState(null)
 
   useEffect(() => {
     // Fetch pool groups and user trips on mount
@@ -93,12 +107,53 @@ const Pooling = () => {
     }))
   }
 
+  const handleApprovePackage = async (groupId) => {
+    try {
+      setApprovingGroupId(groupId)
+      await poolingService.approvePackage(groupId)
+      alert('Package approved! You can now proceed to payment.')
+      fetchMyPoolGroups()
+    } catch (err) {
+      console.error('Failed to approve package:', err)
+      alert(err.response?.data?.message || 'Failed to approve package')
+    } finally {
+      setApprovingGroupId(null)
+    }
+  }
+
+  const handlePaymentSuccess = async (paymentData, groupId) => {
+    try {
+      alert('Payment successful! Your payment has been recorded.')
+      setPaymentGroupId(null)
+      fetchMyPoolGroups()
+      navigate(`/payment-success/${paymentData.paymentId}`)
+    } catch (err) {
+      console.error('Payment success handling error:', err)
+    }
+  }
+
+  const handlePaymentFailure = (error) => {
+    console.error('Payment failed:', error)
+    alert(error.description || 'Payment failed. Please try again.')
+    setPaymentGroupId(null)
+  }
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  const isCreator = (group) => {
+    return group.createdBy?.id === user?.id || group.createdById === user?.id
+  }
+
+  const getMemberStatus = (group) => {
+    if (!group.members) return null
+    const member = group.members.find(m => m.userId === user?.id)
+    return member
   }
 
   return (
@@ -268,14 +323,96 @@ const Pooling = () => {
                           </span>
                         </div>
                         
-                        <div className="flex space-x-2">
+                        {/* Package and Payment Info */}
+                        {activeTab === 'my-trips' && group.perPersonCost && (
+                          <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-600 dark:text-gray-400">Per Person Cost:</span>
+                              <span className="font-semibold text-primary flex items-center">
+                                <IndianRupee className="h-3 w-3" />
+                                {group.perPersonCost.toLocaleString()}
+                              </span>
+                            </div>
+                            {group.paymentDeadline && (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 dark:text-gray-400">Payment Deadline:</span>
+                                <span className="text-xs">{formatDate(group.paymentDeadline)}</span>
+                              </div>
+                            )}
+                            {getMemberStatus(group) && (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 dark:text-gray-400">Your Status:</span>
+                                <Badge variant={getMemberStatus(group).paymentStatus === 'PAID' ? 'default' : 'outline'}>
+                                  {getMemberStatus(group).paymentStatus || getMemberStatus(group).status}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="flex flex-col space-y-2">
                           {activeTab === 'my-trips' ? (
-                            <Button variant="outline" className="flex-1" disabled>
-                              <MessageCircle className="h-4 w-4 mr-2" />
-                              Your Group
-                            </Button>
-                          ) : (
                             <>
+                              {isCreator(group) && (
+                                <Button 
+                                  variant="default" 
+                                  className="w-full"
+                                  onClick={() => navigate(`/group-admin/${group.id}`)}
+                                >
+                                  <Settings className="h-4 w-4 mr-2" />
+                                  Manage Group
+                                </Button>
+                              )}
+                              
+                              {!isCreator(group) && group.selectedPackageId && (
+                                <>
+                                  {/* Approve Button */}
+                                  {getMemberStatus(group)?.status === 'APPROVED' && 
+                                   !['PAYMENT_PENDING', 'PAID'].includes(getMemberStatus(group)?.paymentStatus) && (
+                                    <Button
+                                      variant="outline"
+                                      className="w-full"
+                                      onClick={() => handleApprovePackage(group.id)}
+                                      disabled={approvingGroupId === group.id}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      {approvingGroupId === group.id ? 'Approving...' : 'Approve Package'}
+                                    </Button>
+                                  )}
+                                  
+                                  {/* Payment Button */}
+                                  {getMemberStatus(group)?.paymentStatus === 'PAYMENT_PENDING' && (
+                                    <RazorpayCheckout
+                                      amount={group.perPersonCost}
+                                      poolGroupId={group.id}
+                                      onSuccess={(data) => handlePaymentSuccess(data, group.id)}
+                                      onFailure={handlePaymentFailure}
+                                      buttonText={`Pay ₹${group.perPersonCost.toLocaleString()}`}
+                                      buttonVariant="default"
+                                      buttonSize="default"
+                                      disabled={paymentGroupId === group.id}
+                                    />
+                                  )}
+                                  
+                                  {/* Paid Status */}
+                                  {getMemberStatus(group)?.paymentStatus === 'PAID' && (
+                                    <Button variant="outline" className="w-full" disabled>
+                                      <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                                      Payment Completed
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                              
+                              {!group.selectedPackageId && !isCreator(group) && (
+                                <Button variant="outline" className="w-full" disabled>
+                                  <Clock className="h-4 w-4 mr-2" />
+                                  Waiting for Admin
+                                </Button>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex space-x-2">
                               <Button
                                 variant="outline"
                                 className="flex-1"
@@ -288,7 +425,7 @@ const Pooling = () => {
                               <Button variant="outline" size="icon">
                                 <MessageCircle className="h-4 w-4" />
                               </Button>
-                            </>
+                            </div>
                           )}
                         </div>
                       </div>

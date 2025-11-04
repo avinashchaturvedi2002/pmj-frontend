@@ -26,6 +26,15 @@ export const packageService = {
   deletePackage: async (packageId) => {
     return await api.delete(`/packages/${packageId}`);
   },
+
+  // Get package suggestions for a trip
+  // Using extended timeout of 20 minutes for complex package calculations
+  getSuggestions: async (tripId, page = 1, limit = 10) => {
+    return await api.get(`/packages/suggest/${tripId}?page=${page}&limit=${limit}`, {
+      timeout: 1200000 // 20 minutes
+    });
+  },
 };
+
 
 

@@ -11,6 +11,9 @@ import Buses from './pages/Buses'
 import Hotels from './pages/Hotels'
 import Bookings from './pages/Bookings'
 import AdminDashboard from './pages/AdminDashboard'
+import PackageSelection from './pages/PackageSelection'
+import PaymentStatus from './pages/PaymentStatus'
+import GroupAdmin from './pages/GroupAdmin'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -54,34 +57,63 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Route>
-
-
-
           <Route
-    path="buses"
-    element={
-      <ProtectedRoute>
-        <Buses />
-      </ProtectedRoute>
-    }
-  />
-  <Route
-    path="hotels"
-    element={
-      <ProtectedRoute>
-        <Hotels />
-      </ProtectedRoute>
-    }
-  />
-  <Route
-    path="bookings"
-    element={
-      <ProtectedRoute>
-        <Bookings />
-      </ProtectedRoute>
-    }
-  />
+            path="group-admin/:groupId"
+            element={
+              <ProtectedRoute>
+                <GroupAdmin />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="packages/:tripId"
+            element={
+              <ProtectedRoute>
+                <PackageSelection />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="payment-success/:paymentId"
+            element={
+              <ProtectedRoute>
+                <PaymentStatus />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="payment-failure/:paymentId"
+            element={
+              <ProtectedRoute>
+                <PaymentStatus />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="buses"
+            element={
+              <ProtectedRoute>
+                <Buses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="hotels"
+            element={
+              <ProtectedRoute>
+                <Hotels />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="bookings"
+            element={
+              <ProtectedRoute>
+                <Bookings />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
 
 
        {/* <Route

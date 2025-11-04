@@ -42,6 +42,27 @@ export const poolingService = {
     const params = new URLSearchParams(filters).toString();
     return await api.get(`/pooling/my/groups${params ? `?${params}` : ''}`);
   },
+
+  // Set package and per-person cost for group (Admin/Creator)
+  setGroupPackage: async (groupId, data) => {
+    return await api.post(`/pooling/${groupId}/set-package`, data);
+  },
+
+  // Member approves selected package
+  approvePackage: async (groupId) => {
+    return await api.post(`/pooling/${groupId}/approve-package`);
+  },
+
+  // Check group payment status
+  checkGroupPaymentStatus: async (groupId) => {
+    return await api.get(`/pooling/${groupId}/payment-status`);
+  },
+
+  // Lock group after all payments (Admin/Creator)
+  lockGroup: async (groupId) => {
+    return await api.post(`/pooling/${groupId}/lock`);
+  },
 };
+
 
 

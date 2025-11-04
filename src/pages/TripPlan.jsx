@@ -19,12 +19,18 @@ const TripPlan = () => {
     startDate: null,
     endDate: null,
     budget: '',
-    people: ''
+    people: '',
+    activityBudgetPercent: 30 // Default: 30% for activities/food/misc
   })
   const [errors, setErrors] = useState({})
   
-  const { planTrip, isLoading } = useTripStore()
+  const { planTrip, isLoading} = useTripStore()
   const navigate = useNavigate()
+
+  // Calculate budget breakdown
+  const budgetValue = parseInt(formData.budget) || 0
+  const activityBudget = Math.round((budgetValue * formData.activityBudgetPercent) / 100)
+  const packageBudget = budgetValue - activityBudget
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -90,13 +96,15 @@ const TripPlan = () => {
       startDate: format(formData.startDate, 'yyyy-MM-dd'),
       endDate: format(formData.endDate, 'yyyy-MM-dd'),
       budget: parseInt(formData.budget),
-      travelers: parseInt(formData.people)
+      travelers: parseInt(formData.people),
+      activityBudgetPercent: formData.activityBudgetPercent
     }
     
     const result = await planTrip(tripData)
     
     if (result.success) {
-      navigate('/suggestions')
+      // Navigate to package selection page
+      navigate(`/packages/${result.trip.id}`)
     } else {
       setErrors({ general: result.error || 'Failed to plan trip' })
     }
@@ -272,6 +280,65 @@ const TripPlan = () => {
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.people}</p>
                     )}
                   </div>
+                </div>
+
+                {/* Budget Allocation Slider */}
+                <div className="space-y-4 pt-4 border-t">
+                  <div>
+                    <Label htmlFor="activityBudgetPercent" className="text-base font-semibold">
+                      Budget Allocation
+                    </Label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Allocate 0-75% of your budget for activities, food, and exploring. The rest will be used for transport and accommodation.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="activityBudgetPercent">Activities & Food</Label>
+                      <span className="text-sm font-medium">{formData.activityBudgetPercent}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      id="activityBudgetPercent"
+                      name="activityBudgetPercent"
+                      min="0"
+                      max="75"
+                      step="5"
+                      value={formData.activityBudgetPercent}
+                      onChange={handleChange}
+                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span>0%</span>
+                      <span>25%</span>
+                      <span>50%</span>
+                      <span>75%</span>
+                    </div>
+                  </div>
+
+                  {budgetValue > 0 && (
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="bg-primary/10 dark:bg-primary/20 rounded-lg p-3">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Package Budget</p>
+                        <p className="text-lg font-bold text-primary">
+                          ₹{packageBudget.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {100 - formData.activityBudgetPercent}% for bus + hotel
+                        </p>
+                      </div>
+                      <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Activities & Food</p>
+                        <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                          ₹{activityBudget.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {formData.activityBudgetPercent}% for exploring
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4">
