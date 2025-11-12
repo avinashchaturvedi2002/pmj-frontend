@@ -1,98 +1,126 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
-import { MapPin, Star, Users, Calendar, Search, Filter } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { MapPin, Users, Calendar, Search, Filter, Loader2 } from 'lucide-react'
+import { motion as Motion } from 'framer-motion'
 import { Input } from '../components/ui/Input'
+import { usePoolingStore } from '../store/poolingStore'
 
 const Home = () => {
   console.log('Home component rendering')
   
   const [searchTerm, setSearchTerm] = useState('')
   const [filterDestination, setFilterDestination] = useState('')
+  const poolGroups = usePoolingStore((state) => state.poolGroups)
+  const isLoading = usePoolingStore((state) => state.isLoading)
+  const error = usePoolingStore((state) => state.error)
+  const fetchPoolGroups = usePoolingStore((state) => state.fetchPoolGroups)
+  const location = useLocation()
 
-  // Using basic styles to ensure visibility
-  const containerStyle = {
-    minHeight: '100vh',
-    padding: '20px',
-    backgroundColor: '#f0f0f0'
-  }
-  
-  const popularDestinations = [
-    {
-      id: 1,
-      name: 'Goa, India',
-      description: 'Sun-kissed beaches, vibrant nightlife, and Portuguese heritage in India\'s party capital.',
-      image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=500&h=300&fit=crop',
-      rating: 4.8,
-      currentPeople: 2,
-      maxPeople: 4,
-      travelers: 12500,
-      price: '₹25,000',
-      duration: '5 days'
-    },
-    {
-      id: 2,
-      name: 'Kashmir, India',
-      description: 'Paradise on Earth with snow-capped mountains, pristine lakes, and breathtaking valleys.',
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=500&h=300&fit=crop',
-      rating: 4.9,
-          currentPeople: 1,
-      maxPeople: 3,
-      travelers: 8900,
-      price: '₹35,000',
-      duration: '7 days'
-    },
-    {
-      id: 3,
-      name: 'Kerala, India',
-      description: 'God\'s Own Country with backwaters, tea plantations, and rich cultural heritage.',
-      image: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=500&h=300&fit=crop',
-      rating: 4.7,
-            currentPeople: 3,
-      maxPeople: 6,
-      travelers: 15600,
-      price: '₹20,000',
-      duration: '6 days'
-    },
-    {
-      id: 4,
-      name: 'Rajasthan, India',
-      description: 'Land of kings with magnificent palaces, forts, and the golden Thar Desert.',
-      image: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=500&h=300&fit=crop',
-      rating: 4.6,
-           currentPeople: 1,
-      maxPeople: 2,
-      travelers: 22100,
-      price: '₹30,000',
-      duration: '8 days'
-    },
-    {
-      id: 5,
-      name: 'Paris, France',
-      description: 'The City of Light, famous for its art, fashion, and iconic landmarks like the Eiffel Tower.',
-      image: 'https://images.unsplash.com/photo-1502602898536-47ad22581b52?w=500&h=300&fit=crop',
-      rating: 4.5,
-            currentPeople: 2,
-      maxPeople: 4,
-      travelers: 18900,
-      price: '₹1,20,000',
-      duration: '5 days'
-    },
-    {
-      id: 6,
-      name: 'Singapore',
-      description: 'Modern city-state with futuristic architecture, diverse cuisine, and vibrant culture.',
-      image: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=500&h=300&fit=crop',
-      rating: 4.4,
-            currentPeople: 2,
-      maxPeople: 4,
-      travelers: 11200,
-      price: '₹80,000',
-      duration: '4 days'
+  useEffect(() => {
+    if (location.pathname === '/') {
+      fetchPoolGroups({ status: 'OPEN', limit: 6 })
     }
-  ]
+  }, [fetchPoolGroups, location.pathname])
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (location.pathname === '/') {
+        fetchPoolGroups({ status: 'OPEN', limit: 6 })
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [fetchPoolGroups, location.pathname])
+
+  const destinationImages = useMemo(() => ({
+    goa: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=500&h=300&fit=crop',
+    kashmir: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=500&h=300&fit=crop',
+    kerala: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=500&h=300&fit=crop',
+    rajasthan: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=500&h=300&fit=crop',
+    paris: 'https://images.unsplash.com/photo-1502602898536-47ad22581b52?w=500&h=300&fit=crop',
+    singapore: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=500&h=300&fit=crop'
+  }), [])
+
+  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }), [])
+
+  const getDestinationImage = (destination) => {
+    if (!destination) {
+      return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=300&fit=crop'
+    }
+
+    const key = destination.toLowerCase()
+    return destinationImages[key] || `https://source.unsplash.com/featured/500x300/?travel,${encodeURIComponent(destination)}`
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Dates TBD'
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
+
+  const formatDateRange = (startDate, endDate) => {
+    if (!startDate || !endDate) {
+      return 'Flexible dates'
+    }
+    return `${formatDate(startDate)} - ${formatDate(endDate)}`
+  }
+
+  const formatCurrency = (amount) => {
+    if (typeof amount !== 'number') return '₹0'
+    return currencyFormatter.format(amount)
+  }
+
+  const buildGroupDescription = (group) => {
+    const parts = []
+
+    if (group.createdBy?.name) {
+      parts.push(`Organized by ${group.createdBy.name}`)
+    }
+
+    if (typeof group.currentSize === 'number' && typeof group.groupSize === 'number') {
+      parts.push(`${group.currentSize}/${group.groupSize} joined`)
+    }
+
+    if (typeof group._count?.members === 'number') {
+      const membersLabel = group._count.members === 1 ? 'member approved' : 'members approved'
+      parts.push(`${group._count.members} ${membersLabel}`)
+    }
+
+    if (parts.length === 0) {
+      return 'Explore this pool group with fellow travelers from our community.'
+    }
+
+    return parts.join(' • ')
+  }
+
+  const filteredGroups = useMemo(() => {
+    return poolGroups.filter((group) => {
+      const destination = group.trip?.destination?.toLowerCase() || ''
+      const searchValues = [
+        group.trip?.destination,
+        group.trip?.source,
+        group.description,
+        group.createdBy?.name
+      ]
+
+      const destinationMatch = destination.includes(filterDestination.toLowerCase())
+      const searchMatch = searchValues.some((value) => value?.toLowerCase().includes(searchTerm.toLowerCase()))
+
+      return (!filterDestination || destinationMatch) && (!searchTerm || searchMatch)
+    })
+  }, [poolGroups, searchTerm, filterDestination])
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -127,7 +155,7 @@ const Home = () => {
 
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -151,14 +179,14 @@ const Home = () => {
                 </Button>
               </Link>
             </div>
-          </motion.div>
+          </Motion.div>
         </div>
       </section>
 
       {/* Popular Destinations */}
       <section className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -171,7 +199,7 @@ const Home = () => {
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Explore India's most beautiful destinations and international favorites, handpicked by our travel community
             </p>
-          </motion.div>
+          </Motion.div>
 
 
 
@@ -181,7 +209,7 @@ const Home = () => {
 
 
 
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -209,7 +237,7 @@ const Home = () => {
                 />
               </div>
             </div>
-          </motion.div>
+          </Motion.div>
 
 
 
@@ -222,75 +250,92 @@ const Home = () => {
 
 
 
-          <motion.div
+          <Motion.div
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
-            {popularDestinations
-              .filter(destination => {
-                const matchesSearch = destination.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  destination.description.toLowerCase().includes(searchTerm.toLowerCase())
-                const matchesFilter = !filterDestination ||
-                  destination.name.toLowerCase().includes(filterDestination.toLowerCase())
-                return matchesSearch && matchesFilter
-              })
-              .map((destination) => (
-              <motion.div key={destination.id} variants={itemVariants}>
+            {isLoading && (
+              <div className="col-span-full flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            )}
+
+            {!isLoading && error && (
+              <div className="col-span-full text-center text-sm text-red-500 dark:text-red-400">
+                {error}
+              </div>
+            )}
+
+            {!isLoading && !error && filteredGroups.length === 0 && (
+              <div className="col-span-full text-center text-gray-500 dark:text-gray-400">
+                No pool groups found. Try adjusting your search or create a new trip from the planner.
+              </div>
+            )}
+
+            {!isLoading && !error && filteredGroups.map((group) => (
+              <Motion.div key={group.id} variants={itemVariants}>
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                   <div className="relative">
                     <img
-                      src={destination.image}
-                      alt={destination.name}
+                      src={getDestinationImage(group.trip?.destination)}
+                      alt={group.trip?.destination}
                       className="w-full h-48 object-cover"
                     />
-                    <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center space-x-1">
-                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                      <span className="text-sm font-medium">{destination.rating}</span>
+                    <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                        {group.status}
+                      </span>
                     </div>
                   </div>
                   <CardHeader>
                     <div className="flex items-center space-x-2 mb-2">
                       <MapPin className="h-4 w-4 text-gray-500" />
-                      <CardTitle className="text-xl">{destination.name}</CardTitle>
+                      <CardTitle className="text-xl">
+                        {group.trip?.source} → {group.trip?.destination}
+                      </CardTitle>
                     </div>
                     <CardDescription className="text-sm">
-                      {destination.description}
+                      {buildGroupDescription(group)}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
                       <div className="flex items-center space-x-1">
                         <Users className="h-4 w-4" />
-                        <span>{destination.currentPeople}/{destination.maxPeople} people</span>
+                        <span>{group.currentSize ?? '—'}/{group.groupSize ?? '—'} people</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4" />
-                        <span>{destination.duration}</span>
+                        <span>{formatDateRange(group.trip?.startDate, group.trip?.endDate)}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl font-bold text-primary">
-                        {destination.price}
+                        {group.perPersonCost
+                          ? `${formatCurrency(group.perPersonCost)} / person`
+                          : formatCurrency(group.trip?.budget)}
                       </span>
-                      <Button size="sm">
-                        Join Trip
+                      <Button asChild size="sm">
+                        <Link to="/pooling">
+                          View Pool Group
+                        </Link>
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </Motion.div>
             ))}
-          </motion.div>
+          </Motion.div>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="py-16 bg-white dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -303,10 +348,10 @@ const Home = () => {
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               We make travel planning simple, social, and affordable for Indian travelers
             </p>
-          </motion.div>
+          </Motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -320,9 +365,9 @@ const Home = () => {
               <p className="text-gray-600 dark:text-gray-400">
                 Get personalized recommendations for transport, accommodation, and activities based on your preferences.
               </p>
-            </motion.div>
+            </Motion.div>
 
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -336,9 +381,9 @@ const Home = () => {
               <p className="text-gray-600 dark:text-gray-400">
                 Connect with fellow travelers, share costs, and make new friends on your journey.
               </p>
-            </motion.div>
+            </Motion.div>
 
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -352,7 +397,7 @@ const Home = () => {
               <p className="text-gray-600 dark:text-gray-400">
                 Get day-by-day itineraries with packing lists and local tips for a stress-free trip.
               </p>
-            </motion.div>
+            </Motion.div>
           </div>
         </div>
       </section>

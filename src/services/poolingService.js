@@ -62,6 +62,11 @@ export const poolingService = {
   lockGroup: async (groupId) => {
     return await api.post(`/pooling/${groupId}/lock`);
   },
+
+  // Enforce payment deadline (Admin/Creator)
+  enforcePaymentDeadline: async (groupId) => {
+    return await api.post(`/pooling/${groupId}/enforce-deadline`);
+  },
 };
 
 

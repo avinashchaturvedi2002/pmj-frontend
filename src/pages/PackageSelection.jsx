@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { packageService, bookingService } from '../services';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
@@ -7,6 +7,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import RazorpayCheckout from '../components/RazorpayCheckout';
+import BusSeatPicker from '../components/BusSeatPicker';
+import HotelRoomPicker from '../components/HotelRoomPicker';
 import { 
   Bus, 
   Hotel, 
@@ -49,6 +51,33 @@ const PackageSelection = () => {
   // Booking state
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [expandedSeatPackageKey, setExpandedSeatPackageKey] = useState(null);
+  const [expandedRoomPackageKey, setExpandedRoomPackageKey] = useState(null);
+  const [seatSelections, setSeatSelections] = useState({});
+  const [roomSelections, setRoomSelections] = useState({});
+
+  const tripLegs = useMemo(() => {
+    if (!trip) return [];
+    const start = new Date(trip.startDate);
+    const end = new Date(trip.endDate);
+    const legs = [
+      {
+        key: 'outbound',
+        label: `Outbound • ${start.toLocaleDateString()}`,
+        date: trip.startDate
+      }
+    ];
+    if (start.toDateString() !== end.toDateString()) {
+      legs.push({
+        key: 'return',
+        label: `Return • ${end.toLocaleDateString()}`,
+        date: trip.endDate
+      });
+    }
+    return legs;
+  }, [trip]);
+
+  const travelersCount = trip?.travelers || 1;
 
   useEffect(() => {
     fetchSuggestions(currentPage);
@@ -142,6 +171,144 @@ const PackageSelection = () => {
     if (amenityLower.includes('wifi')) return Wifi;
     if (amenityLower.includes('coffee') || amenityLower.includes('breakfast')) return Coffee;
     return CheckCircle;
+  };
+
+  const getPackageKey = (pkg) => `${pkg.bus.id}-${pkg.hotel.id}`;
+
+  const handleToggleSeatPicker = (packageKey) => {
+    setExpandedSeatPackageKey(prev => (prev === packageKey ? null : packageKey));
+  };
+
+  const handleSeatSelectionChange = (packageKey, legKey, selection) => {
+    setSeatSelections((prev) => {
+      const current = prev[packageKey] || { legs: {} };
+      return {
+        ...prev,
+        [packageKey]: {
+          ...current,
+          legs: {
+            ...current.legs,
+            [legKey]: {
+              seats: selection.seats || [],
+              holdToken: selection.holdToken || null,
+              expiresAt: selection.expiresAt || null
+            }
+          }
+        }
+      };
+    });
+  };
+
+  const isSeatSelectionComplete = (packageKey) => {
+    if (!tripLegs.length) return true;
+    const pkgSelection = seatSelections[packageKey];
+    if (!pkgSelection || !pkgSelection.legs) return false;
+    return tripLegs.every((leg) => {
+      const legSelection = pkgSelection.legs[leg.key];
+      return (legSelection?.seats?.length || 0) === travelersCount;
+    });
+  };
+
+  const buildSeatReservationPayload = (packageKey, busId) => {
+    if (!tripLegs.length) return null;
+    const pkgSelection = seatSelections[packageKey];
+    if (!pkgSelection || !pkgSelection.legs) return null;
+
+    const legsPayload = tripLegs.map((leg) => {
+      const legSelection = pkgSelection.legs[leg.key] || {};
+      return {
+        legKey: leg.key,
+        journeyDate: leg.date,
+        seatNumbers: legSelection.seats || [],
+        holdToken: legSelection.holdToken || null
+      };
+    });
+
+    return {
+      busId,
+      legs: legsPayload
+    };
+  };
+
+  const renderSeatSelectionSummary = (packageKey) => {
+    if (!tripLegs.length) return null;
+    const pkgSelection = seatSelections[packageKey];
+    if (!pkgSelection?.legs) {
+      return (
+        <p className="text-sm text-red-500">
+          Select seats for each journey leg to continue.
+        </p>
+      );
+    }
+
+    return (
+      <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+        {tripLegs.map((leg) => {
+          const selectedSeats = pkgSelection.legs[leg.key]?.seats || [];
+          return (
+            <p key={leg.key}>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{leg.label}:</span>{' '}
+              {selectedSeats.length > 0 ? selectedSeats.join(', ') : 'No seats selected'}
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const handleToggleRoomPicker = (packageKey) => {
+    setExpandedRoomPackageKey(prev => (prev === packageKey ? null : packageKey));
+  };
+
+  const handleRoomSelectionChange = (packageKey, selection) => {
+    setRoomSelections((prev) => ({
+      ...prev,
+      [packageKey]: {
+        roomNumbers: selection.roomNumbers || [],
+        holdToken: selection.holdToken || null,
+        expiresAt: selection.expiresAt || null,
+        checkIn: selection.checkIn,
+        checkOut: selection.checkOut
+      }
+    }));
+  };
+
+  const isRoomSelectionComplete = (packageKey, requiredRooms) => {
+    if (!requiredRooms) return true;
+    const selection = roomSelections[packageKey];
+    return (selection?.roomNumbers?.length || 0) === requiredRooms;
+  };
+
+  const buildRoomAllocationPayload = (packageKey, hotelId) => {
+    const selection = roomSelections[packageKey];
+    if (!selection || !selection.roomNumbers?.length) return null;
+    return {
+      hotelId,
+      roomNumbers: selection.roomNumbers,
+      holdToken: selection.holdToken || null,
+      checkIn: selection.checkIn || trip.startDate,
+      checkOut: selection.checkOut || trip.endDate
+    };
+  };
+
+  const renderRoomSelectionSummary = (packageKey) => {
+    const selection = roomSelections[packageKey];
+    if (!selection || !selection.roomNumbers?.length) {
+      return (
+        <p className="text-sm text-red-500">
+          Select rooms to continue.
+        </p>
+      );
+    }
+
+    return (
+      <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+        <p>
+          <span className="font-medium text-gray-900 dark:text-gray-100">Rooms:</span>{' '}
+          {selection.roomNumbers.join(', ')}
+        </p>
+      </div>
+    );
   };
 
   if (loading) {
@@ -279,6 +446,37 @@ const PackageSelection = () => {
                         <span className="font-medium">₹{pkg.pricing.busRoundTripCost.toLocaleString()}</span>
                       </div>
                     </div>
+                    <div className="mt-4 space-y-3">
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">Seat Selection</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleSeatPicker(getPackageKey(pkg))}
+                          className="gap-2"
+                        >
+                          {expandedSeatPackageKey === getPackageKey(pkg) ? 'Hide Seats' : 'Choose Seats'}
+                        </Button>
+                        {trip && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {travelersCount} traveler{travelersCount > 1 ? 's' : ''} • {tripLegs.length} leg{tripLegs.length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+
+                      {trip && expandedSeatPackageKey === getPackageKey(pkg) && (
+                        <BusSeatPicker
+                          busId={pkg.bus.id}
+                          tripId={trip.id}
+                          legs={tripLegs}
+                          travelers={travelersCount}
+                          selections={seatSelections[getPackageKey(pkg)]?.legs || {}}
+                          onSelectionChange={(legKey, selection) =>
+                            handleSeatSelectionChange(getPackageKey(pkg), legKey, selection)
+                          }
+                        />
+                      )}
+                    </div>
                   </div>
 
                   {/* Hotel Details */}
@@ -331,6 +529,34 @@ const PackageSelection = () => {
                         </div>
                       )}
                     </div>
+                    <div className="mt-4 space-y-3">
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">Room Selection</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleRoomPicker(getPackageKey(pkg))}
+                          className="gap-2"
+                        >
+                          {expandedRoomPackageKey === getPackageKey(pkg) ? 'Hide Rooms' : 'Choose Rooms'}
+                        </Button>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {pkg.pricing.roomsNeeded} room{pkg.pricing.roomsNeeded > 1 ? 's' : ''} required
+                        </span>
+                      </div>
+
+                      {expandedRoomPackageKey === getPackageKey(pkg) && (
+                        <HotelRoomPicker
+                          hotelId={pkg.hotel.id}
+                          tripId={trip.id}
+                          checkIn={trip.startDate}
+                          checkOut={trip.endDate}
+                          roomsNeeded={pkg.pricing.roomsNeeded}
+                          selection={roomSelections[getPackageKey(pkg)] || {}}
+                          onSelectionChange={(selection) => handleRoomSelectionChange(getPackageKey(pkg), selection)}
+                        />
+                      )}
+                    </div>
                   </div>
 
                   {/* Pricing Summary */}
@@ -361,13 +587,23 @@ const PackageSelection = () => {
                     packageId={pkg.packageId || null}
                     busId={pkg.bus.id}
                     hotelId={pkg.hotel.id}
+                    seatReservations={buildSeatReservationPayload(getPackageKey(pkg), pkg.bus.id)}
+                    roomAllocations={buildRoomAllocationPayload(getPackageKey(pkg), pkg.hotel.id)}
                     onSuccess={handlePaymentSuccess}
                     onFailure={handlePaymentFailure}
                     buttonText={`Book Package - ₹${pkg.pricing.totalCost.toLocaleString()}`}
                     buttonVariant="default"
                     buttonSize="lg"
-                    disabled={bookingInProgress}
+                    disabled={
+                      bookingInProgress ||
+                      !isSeatSelectionComplete(getPackageKey(pkg)) ||
+                      !isRoomSelectionComplete(getPackageKey(pkg), pkg.pricing.roomsNeeded)
+                    }
                   />
+                  <div className="space-y-2">
+                    {renderSeatSelectionSummary(getPackageKey(pkg))}
+                    {renderRoomSelectionSummary(getPackageKey(pkg))}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -375,56 +611,45 @@ const PackageSelection = () => {
         </div>
 
         {/* Pagination Controls */}
-        {pagination.totalPages > 1 && (
+        {pagination.total > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="mt-8 flex items-center justify-center gap-2"
+            className="mt-8 flex flex-col items-center gap-3"
           >
-            <Button
-              variant="outline"
-              onClick={handlePreviousPage}
-              disabled={!pagination.hasPrevPage}
-              className="gap-2"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Previous
-            </Button>
-
             <div className="flex items-center gap-2">
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
-                <Button
-                  key={pageNum}
-                  variant={pageNum === pagination.page ? 'default' : 'outline'}
-                  onClick={() => handlePageChange(pageNum)}
-                  className="min-w-[40px]"
-                >
-                  {pageNum}
-                </Button>
-              ))}
+              <Button
+                variant="outline"
+                onClick={handlePreviousPage}
+                disabled={!pagination.hasPrevPage}
+                className="gap-2"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Previous
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleNextPage}
+                disabled={!pagination.hasNextPage}
+                className="gap-2"
+              >
+                Next
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Button>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={handleNextPage}
-              disabled={!pagination.hasNextPage}
-              className="gap-2"
-            >
-              Next
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Button>
+            {/* Results Summary */}
+            <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+              Showing {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} packages · Page {pagination.page} of {pagination.totalPages}
+            </div>
           </motion.div>
         )}
-
-        {/* Results Summary */}
-        <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          Showing {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} packages
-        </div>
 
         {suggestions.length === 0 && !loading && (
           <div className="text-center py-12">

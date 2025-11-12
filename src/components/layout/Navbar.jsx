@@ -13,8 +13,6 @@ const Navbar = ({ isDarkMode, toggleDarkMode }) => {
     { name: 'Home', href: '/' },
     { name: 'Plan Trip', href: '/plan-trip' },
     { name: 'Travel Pooling', href: '/pooling' },
-    { name: 'Buses', href: '/buses' },
-    { name: 'Hotels', href: '/hotels' },
     { name: 'My Bookings', href: '/bookings' },
   ]
 

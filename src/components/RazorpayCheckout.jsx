@@ -17,7 +17,9 @@ const RazorpayCheckout = ({
   buttonText = 'Pay Now',
   buttonVariant = 'default',
   buttonSize = 'default',
-  disabled = false
+  disabled = false,
+  seatReservations = null,
+  roomAllocations = null
 }) => {
   const [loading, setLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
@@ -71,7 +73,9 @@ const RazorpayCheckout = ({
         tripId: tripId || null,
         packageId: packageId || null,
         busId: busId || null,
-        hotelId: hotelId || null
+        hotelId: hotelId || null,
+        seatReservations: seatReservations || undefined,
+        roomAllocations: roomAllocations || undefined
       });
 
       console.log('✅ Order creation response:', response);

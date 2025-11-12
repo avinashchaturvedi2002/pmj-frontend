@@ -413,15 +413,22 @@ const Pooling = () => {
                             </>
                           ) : (
                             <div className="flex space-x-2">
-                              <Button
-                                variant="outline"
-                                className="flex-1"
-                                onClick={() => handleJoinTrip(group.id)}
-                                disabled={group.status !== 'OPEN'}
-                              >
-                                <UserPlus className="h-4 w-4 mr-2" />
-                                Join Trip
-                              </Button>
+                              {getMemberStatus(group)?.status === 'PENDING' ? (
+                                <Button variant="outline" className="flex-1" disabled>
+                                  <Clock className="h-4 w-4 mr-2" />
+                                  Request Pending
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  className="flex-1"
+                                  onClick={() => handleJoinTrip(group.id)}
+                                  disabled={group.status !== 'OPEN'}
+                                >
+                                  <UserPlus className="h-4 w-4 mr-2" />
+                                  Join Trip
+                                </Button>
+                              )}
                               <Button variant="outline" size="icon">
                                 <MessageCircle className="h-4 w-4" />
                               </Button>
