@@ -67,6 +67,21 @@ export const poolingService = {
   enforcePaymentDeadline: async (groupId) => {
     return await api.post(`/pooling/${groupId}/enforce-deadline`);
   },
+
+  // Group chat methods
+  getGroupChat: async (groupId, params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return await api.get(`/pooling/${groupId}/chat${queryParams ? `?${queryParams}` : ''}`);
+  },
+
+  getGroupChatMessages: async (groupId, params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return await api.get(`/pooling/${groupId}/chat/messages${queryParams ? `?${queryParams}` : ''}`);
+  },
+
+  sendGroupMessage: async (groupId, data) => {
+    return await api.post(`/pooling/${groupId}/chat/messages`, data);
+  },
 };
 
 

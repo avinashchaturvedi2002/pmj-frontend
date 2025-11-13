@@ -26,7 +26,9 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react'
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion'
+import GroupChat from '../components/chat/GroupChat'
 
 const Pooling = () => {
   const navigate = useNavigate()
@@ -47,6 +49,9 @@ const Pooling = () => {
 
   const [approvingGroupId, setApprovingGroupId] = useState(null)
   const [paymentGroupId, setPaymentGroupId] = useState(null)
+  const [chatGroupId, setChatGroupId] = useState(null)
+  const [chatGroupName, setChatGroupName] = useState(null)
+  const [chatMemberCount, setChatMemberCount] = useState(null)
 
   useEffect(() => {
     fetchPoolGroups({ status: 'OPEN' })
@@ -118,7 +123,7 @@ const Pooling = () => {
     }
   }
 
-  const handlePaymentSuccess = async (paymentData, groupId) => {
+  const handlePaymentSuccess = async (paymentData) => {
     try {
       alert('Payment successful! Your payment has been recorded.')
       setPaymentGroupId(null)
@@ -147,10 +152,18 @@ const Pooling = () => {
     return group.createdBy?.id === user?.id || group.createdById === user?.id
   }
 
+  const isAdmin = () => {
+    return user?.role === 'ADMIN'
+  }
+
+  const canAccessChat = (group) => {
+    return isAdmin() || isCreator(group) || getMemberStatus(group)
+  }
+
   const getMemberStatus = (group) => {
     if (!group.members) return null
     const member = group.members.find(m => m.userId === user?.id)
-    if (member && process.env.NODE_ENV === 'development') {
+    if (member && import.meta.env.DEV) {
       // Debug logging to help troubleshoot payment button visibility
       console.log('Member status for group', group.id, ':', {
         status: member.status,
@@ -390,16 +403,32 @@ const Pooling = () => {
                         <div className="flex flex-col space-y-2">
                           {activeTab === 'my-trips' ? (
                             <>
-                              {isCreator(group) && (
-                                <Button 
-                                  variant="default" 
-                                  className="w-full"
-                                  onClick={() => navigate(`/group-admin/${group.id}`)}
-                                >
-                                  <Settings className="h-4 w-4 mr-2" />
-                                  Manage Group
-                                </Button>
-                              )}
+                              <div className="flex gap-2">
+                                {isCreator(group) && (
+                                  <Button 
+                                    variant="default" 
+                                    className="flex-1"
+                                    onClick={() => navigate(`/group-admin/${group.id}`)}
+                                  >
+                                    <Settings className="h-4 w-4 mr-2" />
+                                    Manage
+                                  </Button>
+                                )}
+                                {canAccessChat(group) && (
+                                  <Button 
+                                    variant="outline" 
+                                    className="flex-1"
+                                    onClick={() => {
+                                      setChatGroupId(group.id)
+                                      setChatGroupName(group.trip?.destination || 'Group Chat')
+                                      setChatMemberCount(group.currentSize || group.groupSize)
+                                    }}
+                                  >
+                                    <MessageCircle className="h-4 w-4 mr-2" />
+                                    {isAdmin() ? 'View Chat' : 'Chat'}
+                                  </Button>
+                                )}
+                              </div>
                               
                               {!isCreator(group) && (group.selectedPackageId || group.selectedPackage) && (
                                 <>
@@ -471,9 +500,20 @@ const Pooling = () => {
                                   Join Trip
                                 </Button>
                               )}
-                              <Button variant="outline" size="icon">
-                                <MessageCircle className="h-4 w-4" />
-                              </Button>
+                              {canAccessChat(group) && (
+                                <Button 
+                                  variant="outline" 
+                                  size="icon"
+                                  onClick={() => {
+                                    setChatGroupId(group.id)
+                                    setChatGroupName(group.trip?.destination || 'Group Chat')
+                                    setChatMemberCount(group.currentSize || group.groupSize)
+                                  }}
+                                  title={isAdmin() ? "View Group Chat (Admin)" : "Open Group Chat"}
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -571,18 +611,32 @@ const Pooling = () => {
             </motion.div>
           </div>
         )}
+
+        {/* Group Chat Modal */}
+        {chatGroupId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full"
+            >
+              <GroupChat
+                groupId={chatGroupId}
+                groupName={chatGroupName}
+                memberCount={chatMemberCount}
+                onClose={() => {
+                  setChatGroupId(null)
+                  setChatGroupName(null)
+                  setChatMemberCount(null)
+                }}
+              />
+            </motion.div>
+          </div>
+        )}
       </div>
     </div>
   )
-}
-
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('en-IN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
 }
 
 export default Pooling

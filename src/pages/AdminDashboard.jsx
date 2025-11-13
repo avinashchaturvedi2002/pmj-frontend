@@ -25,9 +25,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Bus,
-  Hotel
+  Hotel,
+  MessageCircle
 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
+import GroupChat from '../components/chat/GroupChat'
 
 const POOL_STATUS_OPTIONS = ['OPEN', 'CLOSED', 'LOCKED']
 const USER_PAGE_SIZE = 10
@@ -68,6 +70,9 @@ const AdminDashboard = () => {
   })
   const [paymentSummary, setPaymentSummary] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [chatGroupId, setChatGroupId] = useState(null)
+  const [chatGroupName, setChatGroupName] = useState(null)
+  const [chatMemberCount, setChatMemberCount] = useState(null)
   const [enforcingDeadline, setEnforcingDeadline] = useState(false)
   const [requestsLoading, setRequestsLoading] = useState(false)
   const [paymentSnapshots, setPaymentSnapshots] = useState({})
@@ -1017,28 +1022,43 @@ const AdminDashboard = () => {
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {poolGroups.map((group) => (
-                          <Button
-                            key={group.id}
-                            variant={selectedGroupId === group.id ? 'default' : 'outline'}
-                            className="justify-start h-auto py-4 px-4"
-                            onClick={() => fetchGroupDetails(group.id)}
-                          >
-                            <div className="w-full text-left space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="font-semibold">
-                                  {group.trip?.destination || 'Unknown Destination'}
-                                </span>
-                                <Badge variant="outline">{group.status}</Badge>
+                          <div key={group.id} className="relative">
+                            <Button
+                              variant={selectedGroupId === group.id ? 'default' : 'outline'}
+                              className="justify-start h-auto py-4 px-4 w-full"
+                              onClick={() => fetchGroupDetails(group.id)}
+                            >
+                              <div className="w-full text-left space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold">
+                                    {group.trip?.destination || 'Unknown Destination'}
+                                  </span>
+                                  <Badge variant="outline">{group.status}</Badge>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  {group.trip?.source} → {group.trip?.destination}
+                                </p>
+                                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
+                                  <span>Members: {group.currentSize}/{group.groupSize}</span>
+                                  <span>{formatDateTimeDisplay(group.createdAt)}</span>
+                                </div>
                               </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {group.trip?.source} → {group.trip?.destination}
-                              </p>
-                              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
-                                <span>Members: {group.currentSize}/{group.groupSize}</span>
-                                <span>{formatDateTimeDisplay(group.createdAt)}</span>
-                              </div>
-                            </div>
-                          </Button>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute top-2 right-2"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setChatGroupId(group.id)
+                                setChatGroupName(group.trip?.destination || 'Group Chat')
+                                setChatMemberCount(group.currentSize || group.groupSize)
+                              }}
+                              title="View Group Chat"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -1590,6 +1610,24 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Group Chat Modal */}
+      {chatGroupId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full">
+            <GroupChat
+              groupId={chatGroupId}
+              groupName={chatGroupName}
+              memberCount={chatMemberCount}
+              onClose={() => {
+                setChatGroupId(null)
+                setChatGroupName(null)
+                setChatMemberCount(null)
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
