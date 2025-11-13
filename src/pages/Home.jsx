@@ -37,29 +37,11 @@ const Home = () => {
     }
   }, [fetchPoolGroups, location.pathname])
 
-  const destinationImages = useMemo(() => ({
-    goa: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=500&h=300&fit=crop',
-    kashmir: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=500&h=300&fit=crop',
-    kerala: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=500&h=300&fit=crop',
-    rajasthan: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=500&h=300&fit=crop',
-    paris: 'https://images.unsplash.com/photo-1502602898536-47ad22581b52?w=500&h=300&fit=crop',
-    singapore: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=500&h=300&fit=crop'
-  }), [])
-
   const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 0
   }), [])
-
-  const getDestinationImage = (destination) => {
-    if (!destination) {
-      return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=300&fit=crop'
-    }
-
-    const key = destination.toLowerCase()
-    return destinationImages[key] || `https://source.unsplash.com/featured/500x300/?travel,${encodeURIComponent(destination)}`
-  }
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Dates TBD'
@@ -277,24 +259,19 @@ const Home = () => {
             {!isLoading && !error && filteredGroups.map((group) => (
               <Motion.div key={group.id} variants={itemVariants}>
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                  <div className="relative">
-                    <img
-                      src={getDestinationImage(group.trip?.destination)}
-                      alt={group.trip?.destination}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                        {group.status}
-                      </span>
-                    </div>
-                  </div>
                   <CardHeader>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      <CardTitle className="text-xl">
-                        {group.trip?.source} → {group.trip?.destination}
-                      </CardTitle>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <MapPin className="h-4 w-4 text-gray-500" />
+                        <CardTitle className="text-xl">
+                          {group.trip?.source} → {group.trip?.destination}
+                        </CardTitle>
+                      </div>
+                      <div className="bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1 flex items-center">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                          {group.status}
+                        </span>
+                      </div>
                     </div>
                     <CardDescription className="text-sm">
                       {buildGroupDescription(group)}

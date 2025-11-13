@@ -150,6 +150,15 @@ const Pooling = () => {
   const getMemberStatus = (group) => {
     if (!group.members) return null
     const member = group.members.find(m => m.userId === user?.id)
+    if (member && process.env.NODE_ENV === 'development') {
+      // Debug logging to help troubleshoot payment button visibility
+      console.log('Member status for group', group.id, ':', {
+        status: member.status,
+        paymentStatus: member.paymentStatus,
+        hasPackage: !!(group.selectedPackageId || group.selectedPackage),
+        perPersonCost: group.perPersonCost
+      })
+    }
     return member
   }
 
@@ -314,28 +323,66 @@ const Pooling = () => {
                           </span>
                         </div>
                         
-                        {activeTab === 'my-trips' && group.perPersonCost && (
-                          <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600 dark:text-gray-400">Per Person Cost:</span>
-                              <span className="font-semibold text-primary flex items-center">
-                                <IndianRupee className="h-3 w-3" />
-                                {group.perPersonCost.toLocaleString()}
-                              </span>
+                        {activeTab === 'my-trips' && group.selectedPackage && (
+                          <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-3">
+                            <div>
+                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                                Selected Package
+                              </h4>
+                              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600 dark:text-gray-400">Package:</span>
+                                  <span className="font-medium text-gray-900 dark:text-white">
+                                    {group.selectedPackage.name || 'Package Selected'}
+                                  </span>
+                                </div>
+                                {group.selectedPackage.bus && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Bus:</span>
+                                    <span className="text-gray-900 dark:text-white">
+                                      {group.selectedPackage.bus.busName || group.selectedPackage.bus.busNumber || 'N/A'}
+                                    </span>
+                                  </div>
+                                )}
+                                {group.selectedPackage.hotel && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Hotel:</span>
+                                    <span className="text-gray-900 dark:text-white">
+                                      {group.selectedPackage.hotel.name || 'N/A'}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            {group.paymentDeadline && (
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600 dark:text-gray-400">Payment Deadline:</span>
-                                <span className="text-xs">{formatDate(group.paymentDeadline)}</span>
-                              </div>
-                            )}
-                            {getMemberStatus(group) && (
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600 dark:text-gray-400">Your Status:</span>
-                                <Badge variant={getMemberStatus(group).paymentStatus === 'PAID' ? 'default' : 'outline'}>
-                                  {getMemberStatus(group).paymentStatus || getMemberStatus(group).status}
-                                </Badge>
-                              </div>
+                            {group.perPersonCost && (
+                              <>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600 dark:text-gray-400">Per Person Cost:</span>
+                                  <span className="font-semibold text-primary flex items-center">
+                                    <IndianRupee className="h-3 w-3" />
+                                    {group.perPersonCost.toLocaleString()}
+                                  </span>
+                                </div>
+                                {group.paymentDeadline && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Payment Deadline:</span>
+                                    <span className="text-xs">{formatDate(group.paymentDeadline)}</span>
+                                  </div>
+                                )}
+                                {getMemberStatus(group) && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Your Status:</span>
+                                    <Badge variant={
+                                      getMemberStatus(group).paymentStatus === 'SUCCESS' || 
+                                      getMemberStatus(group).status === 'PAID' 
+                                        ? 'default' 
+                                        : 'outline'
+                                    }>
+                                      {getMemberStatus(group).paymentStatus || getMemberStatus(group).status}
+                                    </Badge>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         )}
@@ -354,10 +401,12 @@ const Pooling = () => {
                                 </Button>
                               )}
                               
-                              {!isCreator(group) && group.selectedPackageId && (
+                              {!isCreator(group) && (group.selectedPackageId || group.selectedPackage) && (
                                 <>
                                   {getMemberStatus(group)?.status === 'APPROVED' && 
-                                   !['PAYMENT_PENDING', 'PAID'].includes(getMemberStatus(group)?.paymentStatus) && (
+                                   getMemberStatus(group)?.paymentStatus !== 'PENDING' &&
+                                   getMemberStatus(group)?.paymentStatus !== 'SUCCESS' &&
+                                   getMemberStatus(group)?.status !== 'PAYMENT_PENDING' && (
                                     <Button
                                       variant="outline"
                                       className="w-full"
@@ -369,10 +418,15 @@ const Pooling = () => {
                                     </Button>
                                   )}
                                   
-                                  {getMemberStatus(group)?.paymentStatus === 'PAYMENT_PENDING' && (
+                                  {((getMemberStatus(group)?.status === 'PAYMENT_PENDING' || 
+                                    getMemberStatus(group)?.paymentStatus === 'PENDING') &&
+                                   group.perPersonCost &&
+                                   getMemberStatus(group)?.paymentStatus !== 'SUCCESS' &&
+                                   getMemberStatus(group)?.status !== 'PAID') && (
                                     <RazorpayCheckout
                                       amount={group.perPersonCost}
                                       poolGroupId={group.id}
+                                      groupMemberId={getMemberStatus(group)?.id}
                                       onSuccess={(data) => handlePaymentSuccess(data, group.id)}
                                       onFailure={handlePaymentFailure}
                                       buttonText={`Pay ₹${group.perPersonCost.toLocaleString()}`}
@@ -382,7 +436,8 @@ const Pooling = () => {
                                     />
                                   )}
                                   
-                                  {getMemberStatus(group)?.paymentStatus === 'PAID' && (
+                                  {(getMemberStatus(group)?.status === 'PAID' || 
+                                    getMemberStatus(group)?.paymentStatus === 'SUCCESS') && (
                                     <Button variant="outline" className="w-full" disabled>
                                       <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
                                       Payment Completed
@@ -391,10 +446,10 @@ const Pooling = () => {
                                 </>
                               )}
                               
-                              {!group.selectedPackageId && !isCreator(group) && (
+                              {!group.selectedPackageId && !group.selectedPackage && !isCreator(group) && (
                                 <Button variant="outline" className="w-full" disabled>
                                   <Clock className="h-4 w-4 mr-2" />
-                                  Waiting for Admin
+                                  Waiting for Package Selection
                                 </Button>
                               )}
                             </>
