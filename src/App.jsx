@@ -113,17 +113,15 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Route>
-
-
-       {/* <Route
+          <Route
             path="admin"
             element={
               <ProtectedRoute>
                 <AdminDashboard />
               </ProtectedRoute>
             }
-          /> */}
+          />
+        </Route>
 
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" replace />} />

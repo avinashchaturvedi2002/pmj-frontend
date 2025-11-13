@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { paymentService } from '../services';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -17,40 +17,98 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ItineraryModal from '../components/ItineraryModal';
+import { parseItinerary, hasItineraryContent } from '../utils/itinerary';
+
+const POLL_INTERVAL_MS = 5000;
+const MAX_POLL_ATTEMPTS = 12;
 
 const PaymentStatus = () => {
   const { paymentId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isItineraryModalOpen, setIsItineraryModalOpen] = useState(false);
+  const [isItineraryPolling, setIsItineraryPolling] = useState(false);
+  const [pollAttempts, setPollAttempts] = useState(0);
+  const [hasShownItineraryModal, setHasShownItineraryModal] = useState(false);
+  const itinerary = useMemo(() => parseItinerary(payment?.itinerary), [payment]);
 
-  // Check if it's a success or failure page
-  const isSuccess = location.pathname.includes('success');
+  const fetchPaymentDetails = useCallback(async ({ silent = false } = {}) => {
+    try {
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+      }
+      const { data } = await paymentService.getPaymentById(paymentId);
+      setPayment(data.payment);
+      return data.payment;
+    } catch (err) {
+      console.error('Failed to fetch payment details:', err);
+      if (!silent) {
+        setError(err.response?.data?.message || 'Failed to load payment details');
+      }
+      throw err;
+    } finally {
+      if (!silent) {
+        setLoading(false);
+      }
+    }
+  }, [paymentId]);
 
   useEffect(() => {
     if (paymentId) {
       fetchPaymentDetails();
     }
+  }, [paymentId, fetchPaymentDetails]);
+
+  useEffect(() => {
+    setPollAttempts(0);
   }, [paymentId]);
 
-  const fetchPaymentDetails = async () => {
-    try {
-      setLoading(true);
-      const { data } = await paymentService.getPaymentById(paymentId);
-      setPayment(data.payment);
-    } catch (err) {
-      console.error('Failed to fetch payment details:', err);
-      setError(err.response?.data?.message || 'Failed to load payment details');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (!paymentId) return;
+    const isPaymentSuccess = payment?.status === 'SUCCESS';
+    if (!isPaymentSuccess) {
+      setIsItineraryPolling(false);
+      return;
     }
-  };
+    if (hasItineraryContent(itinerary)) {
+      setIsItineraryPolling(false);
+      if (!hasShownItineraryModal) {
+        setHasShownItineraryModal(true);
+        setIsItineraryModalOpen(true);
+      }
+      return;
+    }
+    if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+      setIsItineraryPolling(false);
+      return;
+    }
+
+    setIsItineraryPolling(true);
+    const timeout = setTimeout(async () => {
+      try {
+        await fetchPaymentDetails({ silent: true });
+      } catch (pollError) {
+        console.error('Itinerary poll failed:', pollError);
+      } finally {
+        setPollAttempts((prev) => prev + 1);
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearTimeout(timeout);
+  }, [
+    paymentId,
+    payment,
+    itinerary,
+    pollAttempts,
+    hasShownItineraryModal,
+    fetchPaymentDetails
+  ]);
 
   const handleDownloadReceipt = () => {
-    // In production, this would generate a PDF receipt
     alert('Receipt download feature coming soon!');
   };
 
@@ -83,16 +141,16 @@ const PaymentStatus = () => {
   const isPaymentSuccess = payment?.status === 'SUCCESS';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              {/* Status Icon and Message */}
+    <>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card className="mb-6">
+              <CardContent className="pt-6">
               <div className="text-center mb-6">
                 {isPaymentSuccess ? (
                   <>
@@ -129,7 +187,6 @@ const PaymentStatus = () => {
                 )}
               </div>
 
-              {/* Payment Details */}
               {payment && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
                   <h2 className="text-lg font-semibold mb-4">Payment Details</h2>
@@ -176,7 +233,6 @@ const PaymentStatus = () => {
                 </div>
               )}
 
-              {/* Booking Details */}
               {payment?.booking && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 space-y-4">
                   <h2 className="text-lg font-semibold mb-4">Booking Information</h2>
@@ -229,7 +285,6 @@ const PaymentStatus = () => {
                 </div>
               )}
 
-              {/* Group Member Payment */}
               {payment?.groupMember && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 space-y-4">
                   <h2 className="text-lg font-semibold mb-4">Group Travel Information</h2>
@@ -246,7 +301,47 @@ const PaymentStatus = () => {
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {isPaymentSuccess && itinerary && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <h2 className="text-lg font-semibold">Suggested Itinerary</h2>
+                      {payment.itineraryGeneratedAt && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Generated on {new Date(payment.itineraryGeneratedAt).toLocaleString('en-IN')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => setIsItineraryModalOpen(true)}
+                        variant="default"
+                      >
+                        View Itinerary
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Your personalized itinerary is ready. Click &ldquo;View Itinerary&rdquo; to explore recommendations, day plans, and travel tips.
+                  </p>
+                </div>
+              )}
+
+              {isPaymentSuccess && !hasItineraryContent(itinerary) && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold">Suggested Itinerary</h2>
+                    <Button variant="outline" disabled className="gap-2">
+                      <Loader className="h-4 w-4 animate-spin" />
+                      Preparing
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    We are preparing a tailored itinerary for your trip. This usually takes less than a minute. {isItineraryPolling ? 'We will refresh automatically.' : 'If it takes longer, you can refresh this page later.'}
+                  </p>
+                </div>
+              )}
+
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6 flex flex-wrap gap-3 justify-center">
                 {isPaymentSuccess && (
                   <>
@@ -286,28 +381,35 @@ const PaymentStatus = () => {
                   <span>Go to Home</span>
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Support Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Need Help?</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                If you have any questions or concerns about your payment, please contact our support team.
-              </p>
-              <div className="space-y-2 text-sm">
-                <p><strong>Email:</strong> support@planmyjourney.in</p>
-                <p><strong>Phone:</strong> +91-9876543210</p>
-                <p><strong>Hours:</strong> Mon-Sat, 9:00 AM - 6:00 PM IST</p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Need Help?</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  If you have any questions or concerns about your payment, please contact our support team.
+                </p>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Email:</strong> support@planmyjourney.in</p>
+                  <p><strong>Phone:</strong> +91-9876543210</p>
+                  <p><strong>Hours:</strong> Mon-Sat, 9:00 AM - 6:00 PM IST</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
-    </div>
+
+      <ItineraryModal
+        open={isItineraryModalOpen && hasItineraryContent(itinerary)}
+        onClose={() => setIsItineraryModalOpen(false)}
+        itinerary={itinerary}
+        generatedAt={payment?.itineraryGeneratedAt}
+      />
+    </>
   );
 };
 

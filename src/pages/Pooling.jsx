@@ -45,12 +45,10 @@ const Pooling = () => {
     description: ''
   })
 
-  // State for approve and payment
   const [approvingGroupId, setApprovingGroupId] = useState(null)
   const [paymentGroupId, setPaymentGroupId] = useState(null)
 
   useEffect(() => {
-    // Fetch pool groups and user trips on mount
     fetchPoolGroups({ status: 'OPEN' })
     fetchTrips()
   }, [fetchPoolGroups, fetchTrips])
@@ -80,7 +78,6 @@ const Pooling = () => {
         groupSize: '',
         description: ''
       })
-      // Refresh pool groups
       fetchPoolGroups({ status: 'OPEN' })
       fetchMyPoolGroups()
     } else {
@@ -158,7 +155,6 @@ const Pooling = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <motion.div
@@ -186,7 +182,6 @@ const Pooling = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -207,7 +202,6 @@ const Pooling = () => {
           </Button>
         </motion.div>
 
-        {/* Search and Filter */}
         {activeTab === 'browse' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -240,14 +234,12 @@ const Pooling = () => {
           </motion.div>
         )}
 
-        {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-12">
             <Loader className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
 
-        {/* Trip Cards */}
         {!isLoading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -301,7 +293,6 @@ const Pooling = () => {
                             <span>{group.currentSize}/{group.groupSize} people</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <DollarSign className="h-4 w-4 text-gray-500" />
                             <span>₹{group.trip?.budget || 'N/A'}</span>
                           </div>
                         </div>
@@ -323,7 +314,6 @@ const Pooling = () => {
                           </span>
                         </div>
                         
-                        {/* Package and Payment Info */}
                         {activeTab === 'my-trips' && group.perPersonCost && (
                           <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2">
                             <div className="flex items-center justify-between text-sm">
@@ -366,7 +356,6 @@ const Pooling = () => {
                               
                               {!isCreator(group) && group.selectedPackageId && (
                                 <>
-                                  {/* Approve Button */}
                                   {getMemberStatus(group)?.status === 'APPROVED' && 
                                    !['PAYMENT_PENDING', 'PAID'].includes(getMemberStatus(group)?.paymentStatus) && (
                                     <Button
@@ -380,7 +369,6 @@ const Pooling = () => {
                                     </Button>
                                   )}
                                   
-                                  {/* Payment Button */}
                                   {getMemberStatus(group)?.paymentStatus === 'PAYMENT_PENDING' && (
                                     <RazorpayCheckout
                                       amount={group.perPersonCost}
@@ -394,7 +382,6 @@ const Pooling = () => {
                                     />
                                   )}
                                   
-                                  {/* Paid Status */}
                                   {getMemberStatus(group)?.paymentStatus === 'PAID' && (
                                     <Button variant="outline" className="w-full" disabled>
                                       <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
@@ -444,7 +431,6 @@ const Pooling = () => {
           </motion.div>
         )}
 
-        {/* Create Trip Modal */}
         {showCreateForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <motion.div

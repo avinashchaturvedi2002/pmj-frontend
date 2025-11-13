@@ -294,24 +294,38 @@ const BusSeatPicker = ({
           holdToken: currentHoldToken || undefined
         };
 
-        let newHoldToken = currentHoldToken;
-        let expiresAt = selections[activeLegKey]?.expiresAt || null;
-
         try {
           const response = await busService.holdSeats(busId, payload);
           const data = getPayloadData(response);
-          newHoldToken = data.holdToken || data.reservationToken || newHoldToken;
-          expiresAt = data.expiresAt || expiresAt;
-        } catch (holdError) {
-          console.warn('Failed to hold seat (local selection only):', holdError);
-        }
+          const heldSeats = Array.isArray(data.heldSeats)
+            ? data.heldSeats.map(String)
+            : [seat.seatNumber];
 
-        const updatedSeats = [...currentSelection, seat.seatNumber];
-        onSelectionChange(activeLegKey, {
-          seats: updatedSeats,
-          holdToken: newHoldToken || null,
-          expiresAt: expiresAt || null
-        });
+          if (!heldSeats.includes(seat.seatNumber)) {
+            setErrors((prev) => ({
+              ...prev,
+              [activeLegKey]:
+                'Selected seat could not be held. Please refresh availability and try again.'
+            }));
+            return;
+          }
+
+          const updatedSeats = Array.from(new Set([...currentSelection, ...heldSeats]));
+          onSelectionChange(activeLegKey, {
+            seats: updatedSeats,
+            holdToken: data.holdToken || data.reservationToken || currentHoldToken || null,
+            expiresAt: data.expiresAt || selections[activeLegKey]?.expiresAt || null
+          });
+          setInfoMessages((prev) => ({ ...prev, [activeLegKey]: null }));
+          setErrors((prev) => ({ ...prev, [activeLegKey]: null }));
+        } catch (holdError) {
+          console.warn('Failed to hold seat:', holdError);
+          setErrors((prev) => ({
+            ...prev,
+            [activeLegKey]: holdError?.message || 'Unable to hold seat. Try refreshing availability.'
+          }));
+          return;
+        }
       }
     } catch (error) {
       console.error('Seat toggle failed:', error);

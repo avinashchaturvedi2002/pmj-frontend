@@ -148,7 +148,16 @@ const HotelRoomPicker = ({
         roomsNeeded: roomsRequired
       });
       const data = getPayloadData(response);
-      const heldRooms = data.heldRooms || [roomNumber];
+      const heldRooms = Array.isArray(data.heldRooms)
+        ? data.heldRooms.map((room) => String(room))
+        : [];
+      const normalizedRoom = String(roomNumber);
+
+      if (!heldRooms.includes(normalizedRoom)) {
+        setInfoMessage('Selected room could not be held. Please refresh availability and try again.');
+        return;
+      }
+
       const nextRooms = Array.from(new Set([...selectedRooms, ...heldRooms]));
 
       onSelectionChange({
@@ -159,6 +168,7 @@ const HotelRoomPicker = ({
         checkOut
       });
       setInfoMessage(null);
+      setError(null);
       fetchAvailability(nextRooms);
     } catch (err) {
       console.error('Failed to hold room:', err);
@@ -178,15 +188,25 @@ const HotelRoomPicker = ({
         roomsNeeded: roomsRequired
       });
       const data = getPayloadData(response);
+      const heldRooms = Array.isArray(data.heldRooms)
+        ? data.heldRooms.map((room) => String(room))
+        : suggestedRooms.map((room) => String(room));
+
+      if (heldRooms.length === 0) {
+        setInfoMessage('Suggested rooms could not be held. Please refresh and try again.');
+        return;
+      }
+
       onSelectionChange({
-        roomNumbers: data.heldRooms || suggestedRooms,
+        roomNumbers: heldRooms,
         holdToken: data.holdToken || selection?.holdToken || null,
         expiresAt: data.expiresAt || selection?.expiresAt || null,
         checkIn,
         checkOut
       });
       setInfoMessage(null);
-      fetchAvailability(data.heldRooms || suggestedRooms);
+      setError(null);
+      fetchAvailability(heldRooms);
     } catch (err) {
       console.error('Failed to hold suggested rooms:', err);
       setInfoMessage(err?.message || 'Unable to hold suggested rooms.');

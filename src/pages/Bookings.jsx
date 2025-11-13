@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { useBookingStore } from '../store/bookingStore'
-import { Button } from '../components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
-import { Badge } from '../components/ui/Badge'
+import { useState, useEffect } from 'react';
+import { useBookingStore } from '../store/bookingStore';
+import { Button } from '../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
 import { 
   Calendar, 
   MapPin, 
@@ -11,60 +11,66 @@ import {
   DollarSign,
   Loader,
   XCircle,
-  CheckCircle
-} from 'lucide-react'
-import { motion } from 'framer-motion'
+  CheckCircle,
+  CalendarDays
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import ItineraryModal from '../components/ItineraryModal';
+import { parseItinerary, hasItineraryContent } from '../utils/itinerary';
 
 const Bookings = () => {
-  const { bookings, isLoading, fetchBookings, cancelBooking } = useBookingStore()
-  const [filter, setFilter] = useState('')
+  const { bookings, isLoading, fetchBookings, cancelBooking } = useBookingStore();
+  const [filter, setFilter] = useState('');
+  const [selectedItinerary, setSelectedItinerary] = useState(null);
+  const [isItineraryModalOpen, setIsItineraryModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchBookings()
-  }, [fetchBookings])
+    fetchBookings();
+  }, [fetchBookings]);
 
   const handleCancelBooking = async (bookingId) => {
-    if (!confirm('Are you sure you want to cancel this booking?')) return
+    if (!confirm('Are you sure you want to cancel this booking?')) return;
 
-    const result = await cancelBooking(bookingId)
+    const result = await cancelBooking(bookingId);
     if (result.success) {
-      alert(result.message)
+      alert(result.message);
     } else {
-      alert(result.error)
+      alert(result.error);
     }
-  }
+  };
 
-  const filteredBookings = bookings.filter(booking => {
-    if (!filter) return true
-    return booking.status === filter
-  })
+  const filteredBookings = bookings.filter((booking) => {
+    if (!filter) return true;
+    return booking.status === filter;
+  });
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'CONFIRMED':
-        return 'default'
+        return 'default';
       case 'PENDING':
-        return 'secondary'
+        return 'secondary';
       case 'CANCELLED':
-        return 'destructive'
+        return 'destructive';
       case 'COMPLETED':
-        return 'outline'
+        return 'outline';
       default:
-        return 'secondary'
+        return 'secondary';
     }
-  }
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
-    })
-  }
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -79,7 +85,6 @@ const Bookings = () => {
           </p>
         </motion.div>
 
-        {/* Filter Buttons */}
         <div className="flex flex-wrap gap-2 mb-8">
           <Button
             variant={filter === '' ? 'default' : 'outline'}
@@ -111,14 +116,12 @@ const Bookings = () => {
           </Button>
         </div>
 
-        {/* Loading */}
         {isLoading && (
           <div className="flex justify-center items-center py-12">
             <Loader className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
 
-        {/* Bookings List */}
         {!isLoading && (
           <div className="space-y-4">
             {filteredBookings.length === 0 ? (
@@ -130,13 +133,19 @@ const Bookings = () => {
                 </CardContent>
               </Card>
             ) : (
-              filteredBookings.map((booking, index) => (
-                <motion.div
-                  key={booking.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
+              filteredBookings.map((booking, index) => {
+                const latestPayment = booking.payments?.[0] || null;
+                const itineraryData = parseItinerary(latestPayment?.itinerary);
+                const itineraryAvailable = hasItineraryContent(itineraryData);
+                const itineraryGeneratedAt = latestPayment?.itineraryGeneratedAt;
+
+                return (
+                  <motion.div
+                    key={booking.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                  >
                   <Card className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">
@@ -161,7 +170,6 @@ const Bookings = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {/* Booking Details */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {booking.busBookings && booking.busBookings.length > 0 && (
                             <div className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -199,7 +207,6 @@ const Bookings = () => {
                           )}
                         </div>
 
-                        {/* Total Price */}
                         <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
                           <span className="text-sm font-medium">Total Price:</span>
                           <div className="flex items-center space-x-1">
@@ -208,7 +215,6 @@ const Bookings = () => {
                           </div>
                         </div>
 
-                        {/* Actions */}
                         {booking.status === 'PENDING' && (
                           <Button
                             variant="destructive"
@@ -227,20 +233,49 @@ const Bookings = () => {
                             <span className="font-medium">Booking Confirmed!</span>
                           </div>
                         )}
+
+                        {itineraryAvailable && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full md:w-auto"
+                            onClick={() => {
+                              setSelectedItinerary({
+                                itinerary: itineraryData,
+                                generatedAt: itineraryGeneratedAt,
+                                title: `Suggested Itinerary • ${booking.trip?.destination || 'Trip'}`
+                              });
+                              setIsItineraryModalOpen(true);
+                            }}
+                          >
+                            <CalendarDays className="h-4 w-4 mr-2" />
+                            View Itinerary
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
-                </motion.div>
-              ))
+                  </motion.div>
+                );
+              })
             )}
           </div>
         )}
       </div>
-    </div>
-  )
-}
+      </div>
 
-export default Bookings
+      <ItineraryModal
+        open={isItineraryModalOpen && hasItineraryContent(selectedItinerary?.itinerary)}
+        onClose={() => {
+          setIsItineraryModalOpen(false);
+          setSelectedItinerary(null);
+        }}
+        itinerary={selectedItinerary?.itinerary}
+        generatedAt={selectedItinerary?.generatedAt}
+        title={selectedItinerary?.title}
+      />
+    </>
+  );
+};
 
-
-
+export default Bookings;
